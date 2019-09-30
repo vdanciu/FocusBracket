@@ -1,4 +1,4 @@
-package com.obsidium.focusbracket;
+package com.vdanciu.focusbracket;
 
 import android.content.Context;
 import android.graphics.Canvas;

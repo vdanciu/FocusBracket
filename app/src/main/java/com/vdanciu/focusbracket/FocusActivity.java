@@ -1,4 +1,4 @@
-package com.obsidium.focusbracket;
+package com.vdanciu.focusbracket;
 
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -33,6 +33,7 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
     private LinearLayout        m_lFocusScale;
     private TextView            m_tvMsg;
     private TextView            m_tvInstructions;
+    private TextView            m_tvFocusValue;
 
     enum State { error, setMin, setMax, setNumPics, shoot }
     private State               m_state = State.setMin;
@@ -100,6 +101,7 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
 
         m_tvMsg = (TextView)findViewById(R.id.tvMsg);
         m_tvInstructions = (TextView)findViewById(R.id.tvInstructions);
+        m_tvFocusValue = (TextView)findViewById(R.id.tvFocusValue);
     }
 
     @Override
@@ -128,6 +130,7 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
                 m_focusScaleView.setMaxPosition(focusPosition.maxPosition);
                 m_focusScaleView.setCurPosition(focusPosition.currentPosition);
                 m_curFocus = focusPosition.currentPosition;
+                m_tvFocusValue.setText(String.format("%d",m_curFocus));
                 if (m_waitingForFocus)
                 {
                     if (m_curFocus == m_focusQueue.getFirst())
@@ -192,14 +195,14 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         {
             final int absDiff = Math.abs(m_curFocus - nextFocus);
             final int speed;
-            if (absDiff > 25)
+            if (absDiff > 10)
+                speed = 5;
+            else if (absDiff > 5)
                 speed = 4;
-            else if (absDiff > 20)
+            else if (absDiff > 2)
                 speed = 3;
-            else if (absDiff > 15)
-                speed = 2;
             else
-                speed = 1;
+                speed = 2;
             Logger.info("Starting focus drive (speed " + speed + ")");
             m_camera.startOneShotFocusDrive(m_curFocus < nextFocus ? CameraEx.FOCUS_DRIVE_DIRECTION_FAR : CameraEx.FOCUS_DRIVE_DIRECTION_NEAR, speed);
             // startOneShotFocusDrive won't always trigger our FocusDriveListener

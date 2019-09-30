@@ -11,6 +11,26 @@
         />
 
     <TextView
+        android:id="@+id/tvFocusValue"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginTop="0dp"
+        android:layout_marginRight="0dp"
+        android:background="#64000000"
+        android:ellipsize="none"
+        android:gravity="center_horizontal"
+        android:paddingLeft="10dp"
+        android:paddingTop="4dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="4dp"
+        android:singleLine="false"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        tools:text="0" />
+
+    <TextView
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceMedium"
@@ -23,21 +43,24 @@
         android:gravity="center_horizontal"/>
 
     <TextView
+        android:id="@+id/tvInstructions"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        tools:text="Instructions"
-        android:id="@+id/tvInstructions"
+        android:layout_alignRight="@+id/tvFocusValue"
+        android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:singleLine="false"
+        android:layout_marginTop="0dp"
+        android:layout_marginRight="52dp"
         android:background="#64000000"
-        android:paddingLeft="10dp"
-        android:paddingRight="10dp"
-        android:paddingTop="4dp"
         android:ellipsize="none"
         android:gravity="center_horizontal"
-        android:paddingBottom="4dp"/>
+        android:paddingLeft="10dp"
+        android:paddingTop="4dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="4dp"
+        android:singleLine="false"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        tools:text="Instructions" />
 
     <LinearLayout
         android:orientation="horizontal"
@@ -57,7 +80,7 @@
             android:layout_marginRight="4dp"
             />
 
-        <com.obsidium.focusbracket.FocusScaleView
+        <com.vdanciu.focusbracket.FocusScaleView
             android:layout_width="wrap_content"
             android:layout_height="20dp"
             android:id="@+id/vFocusScale"

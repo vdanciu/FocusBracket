@@ -5,7 +5,7 @@ android {
     buildToolsVersion "20.0.0"
 
     defaultConfig {
-        applicationId "com.obsidium.focusbracket"
+        applicationId "com.vdanciu.focusbracket"
         minSdkVersion 10
         targetSdkVersion 10
         versionCode 6

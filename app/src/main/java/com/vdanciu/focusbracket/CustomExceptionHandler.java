@@ -1,4 +1,4 @@
-package com.obsidium.focusbracket;
+package com.vdanciu.focusbracket;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
