@@ -80,7 +80,7 @@
             android:layout_marginRight="4dp"
             />
 
-        <com.vdanciu.focusbracket.FocusScaleView
+        <com.vdanciu.shookie.FocusScaleView
             android:layout_width="wrap_content"
             android:layout_height="20dp"
             android:id="@+id/vFocusScale"

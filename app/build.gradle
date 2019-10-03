@@ -26,7 +26,7 @@ android {
 
 android.applicationVariants.all { variant ->
     variant.outputs.each { output ->
-        def apkName = "FocusBracket-${output.baseName}-${variant.versionName}.apk"
+        def apkName = "Shookie-${output.baseName}-${variant.versionName}.apk"
         output.outputFile = new File(output.outputFile.parent, apkName)
     }
 }

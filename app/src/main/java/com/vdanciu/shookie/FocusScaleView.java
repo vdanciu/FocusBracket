@@ -1,4 +1,4 @@
-package com.vdanciu.focusbracket;
+package com.vdanciu.shookie;
 
 import android.content.Context;
 import android.graphics.Canvas;

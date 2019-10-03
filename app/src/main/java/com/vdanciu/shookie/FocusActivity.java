@@ -1,4 +1,4 @@
-package com.vdanciu.focusbracket;
+package com.vdanciu.shookie;
 
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -20,7 +20,7 @@ import java.util.LinkedList;
 
 public class FocusActivity extends BaseActivity implements SurfaceHolder.Callback, CameraEx.ShutterListener
 {
-    private static final int COUNTDOWN_SECONDS = 5;
+    private static final int COUNTDOWN_SECONDS = 2;
 
     private SurfaceHolder       m_surfaceHolder;
     private CameraEx            m_camera;
@@ -38,16 +38,18 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
     enum State { error, setMin, setMax, setNumPics, shoot }
     private State               m_state = State.setMin;
 
-    private int                 m_minFocus;
-    private int                 m_maxFocus;
-    private int                 m_curFocus;
+    private int                 m_minFocus = 5;
+    private int                 m_maxFocus = 10;
+    private int                 m_curFocus = -1;
     private int                 m_focusBeforeDrive;
+    private int                 m_targetFocus;
 
     private ArrayList<Integer>  m_pictureCounts;
     private int                 m_pictureCountIndex;
 
     private LinkedList<Integer> m_focusQueue;
-    private boolean             m_waitingForFocus;
+    private boolean             m_focusing = false;
+    private boolean             m_shooting = false;
 
     private int                 m_countdown;
     private final Runnable      m_countDownRunnable = new Runnable()
@@ -68,13 +70,13 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         }
     };
 
-    private final Runnable      m_checkFocusRunnable = new Runnable()
+    private final Runnable m_checkFocusRunnable = new Runnable()
     {
         @Override
         public void run()
         {
-            if (m_waitingForFocus && m_focusBeforeDrive == m_curFocus)
-                focus();
+            if (m_focusing && m_focusBeforeDrive == m_curFocus)
+                focus(m_targetFocus);
         }
     };
 
@@ -130,17 +132,23 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
                 m_focusScaleView.setMaxPosition(focusPosition.maxPosition);
                 m_focusScaleView.setCurPosition(focusPosition.currentPosition);
                 m_curFocus = focusPosition.currentPosition;
-                m_tvFocusValue.setText(String.format("%d",m_curFocus));
-                if (m_waitingForFocus)
+                m_tvFocusValue.setText(String.format("%d", m_curFocus));
+                if (m_focusing)
                 {
-                    if (m_curFocus == m_focusQueue.getFirst())
+                    if (m_curFocus == m_targetFocus)
                     {
                         // Focused, take picture
-                        Logger.info("Taking picture (FocusDriveListener)");
-                        takePicture();
+                        if (m_shooting) {
+                            Logger.info("Taking picture (FocusDriveListener)");
+                            takePicture();
+                        }
+                        else {
+                            endFocusing();
+                        }
                     }
-                    else
-                        focus();
+                    else {
+                        focus(m_targetFocus);
+                    }
                 }
             }
         });
@@ -161,6 +169,8 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
             m_focusQueue.removeFirst();
             if (m_focusQueue.isEmpty())
             {
+                m_shooting = false;
+                m_focusing = false;
                 m_tvMsg.setText("\uE013 Done!");
                 m_tvMsg.setVisibility(View.VISIBLE);
                 m_tvInstructions.setText("Press \uE04C to start over...");
@@ -169,7 +179,9 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
             else
             {
                 // Move to next focus position
-                startFocusing();
+                m_tvInstructions.setText(String.format("%d remaining", m_focusQueue.size()));
+                m_tvInstructions.setVisibility(View.VISIBLE);
+                startFocusingQueue();
             }
         }
     }
@@ -178,22 +190,32 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
     {
         m_tvMsg.setVisibility(View.GONE);
         m_tvInstructions.setVisibility(View.GONE);
-        m_waitingForFocus = false;
+        m_focusing = false;
         m_camera.burstableTakePicture();
     }
 
-    private void focus()
+    private void focusQueueHead()
     {
-        final int nextFocus = m_focusQueue.getFirst();
+        focus(m_focusQueue.getFirst());
+    }
+
+    private void focus(int targetFocus) {
+        m_tvFocusValue.setText(String.format("%d", m_curFocus));
+        m_targetFocus = targetFocus;
         m_focusBeforeDrive = m_curFocus;
-        if (m_curFocus == nextFocus)
+        if (m_curFocus == targetFocus)
         {
-            Logger.info("Taking picture (focus)");
-            takePicture();
+            Logger.info("Found focus (focus)");
+            if (m_shooting) {
+                takePicture();
+            }
+            else {
+                endFocusing();
+            }
         }
         else
         {
-            final int absDiff = Math.abs(m_curFocus - nextFocus);
+            final int absDiff = Math.abs(m_curFocus - targetFocus);
             final int speed;
             if (absDiff > 10)
                 speed = 5;
@@ -204,26 +226,42 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
             else
                 speed = 2;
             Logger.info("Starting focus drive (speed " + speed + ")");
-            m_camera.startOneShotFocusDrive(m_curFocus < nextFocus ? CameraEx.FOCUS_DRIVE_DIRECTION_FAR : CameraEx.FOCUS_DRIVE_DIRECTION_NEAR, speed);
+            m_camera.startOneShotFocusDrive(m_curFocus < targetFocus ? CameraEx.FOCUS_DRIVE_DIRECTION_FAR : CameraEx.FOCUS_DRIVE_DIRECTION_NEAR, speed);
             // startOneShotFocusDrive won't always trigger our FocusDriveListener
             m_handler.postDelayed(m_checkFocusRunnable, 50);
         }
     }
 
-    private void startFocusing()
+    private void startFocusingQueue()
     {
-        m_waitingForFocus = true;
+        m_focusing = true;
         m_tvMsg.setText("Focusing...");
         m_tvMsg.setVisibility(View.VISIBLE);
-        m_tvInstructions.setText(String.format("%d remaining", m_focusQueue.size()));
-        m_tvInstructions.setVisibility(View.VISIBLE);
-        focus();
+
+        focusQueueHead();
+    }
+
+    private void startFocusing(int targetFocus) {
+        Logger.info(String.format("Start Focusing on %d", targetFocus));
+        m_focusing = true;
+        m_tvMsg.setText("Focusing...");
+        m_tvMsg.setVisibility(View.VISIBLE);
+
+        focus(targetFocus);
+    }
+
+    private void endFocusing()
+    {
+        Logger.info(String.format("End focusing on %d", m_targetFocus));
+        m_focusing = false;
+        m_tvMsg.setVisibility(View.GONE);
     }
 
     private void startShooting()
     {
+        m_shooting = true;
         m_tvMsg.setVisibility(View.GONE);
-        startFocusing();
+        startFocusingQueue();
     }
 
     private void initFocusQueue()
@@ -264,18 +302,17 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         switch (m_state)
         {
             case setMin:
-                m_tvMsg.setVisibility(View.GONE);
                 m_lFocusScale.setVisibility(View.VISIBLE);
                 m_focusScaleView.setMinPosition(0);
                 m_tvInstructions.setVisibility(View.VISIBLE);
-                m_tvInstructions.setText("Set minimum focus distance, \uE04C to confirm");
+                m_tvInstructions.setText("Set minimum focus, \uE04C to confirm");
                 break;
             case setMax:
-                m_tvInstructions.setText("Set maximum focus distance, \uE04C to confirm");
+                m_tvInstructions.setText("Set maximum focus, \uE04C to confirm");
                 break;
             case setNumPics:
-                m_tvInstructions.setText("Use dial to select number of pictures, \uE04C to confirm");
                 m_tvMsg.setVisibility(View.VISIBLE);
+                m_tvInstructions.setText("Set number of pictures, \uE04C to confirm");
                 m_lFocusScale.setVisibility(View.GONE);
                 break;
             case shoot:
@@ -325,7 +362,8 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
 
     private void abortShooting()
     {
-        m_waitingForFocus = false;
+        m_focusing = false;
+        m_shooting = false;
         m_handler.removeCallbacks(m_checkFocusRunnable);
         m_handler.removeCallbacks(m_countDownRunnable);
         m_focusQueue = null;
@@ -338,10 +376,10 @@ public class FocusActivity extends BaseActivity implements SurfaceHolder.Callbac
         switch (m_state)
         {
             case setMin:
-                m_minFocus = 0;
+                startFocusing(m_minFocus);
                 break;
             case setMax:
-                m_maxFocus = 0;
+                startFocusing(m_maxFocus);
                 break;
             case setNumPics:
                 initPictureCounts();

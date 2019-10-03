@@ -1,4 +1,4 @@
-package com.vdanciu.focusbracket;
+package com.vdanciu.shookie;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
